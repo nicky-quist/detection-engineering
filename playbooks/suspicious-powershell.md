@@ -35,36 +35,16 @@ High confidence if you see any of these:
 - Is this host a server, admin workstation, or standard endpoint?
 - Has this host/user generated similar alerts before?
 
-## Immediate pivots (Splunk)
-Use these pivots even if you don’t have Sysmon everywhere.
+## Immediate pivots (Splunk) — copy/paste searches
 
-### Pivot A — other PowerShell executions on the same host (last 24h)
-Search for the same host + powershell and review command lines.
+> Note: field names vary by environment. These searches use `coalesce()` so they work with Sysmon (EventCode=1), Security 4688, or EDR-like fields.
 
-### Pivot B — same command-line indicators org-wide (last 24h)
-Search for `-enc` / `downloadstring` / `invoke-webrequest` patterns across all hosts.
-
-### Pivot C — follow-on behavior (last 30 min)
-Look for:
-- new processes spawned after PowerShell (cmd, rundll32, mshta, regsvr32, wscript/cscript)
-- any network connections (proxy/DNS) after execution
-- file writes to Temp/AppData/Downloads (if you ingest that telemetry)
-
-## Decision points
-### Mark as False Positive if:
-- Known admin automation account + known management parent process
-- Script path + behavior matches documented IT task
-- No suspicious follow-on behavior and command is explainable
-
-### Escalate to Incident if:
-- Encoded/hidden + download cradle combo
-- Office/browser as parent process
-- External network retrieval + new executable/script dropped
-- PowerShell spawns LOLBins or suspicious children
-- Repeated hits across multiple hosts/users
-
-## Containment / response (if confirmed suspicious)
-- Isolate host in EDR (if available)
-- Block known-bad domain/IP/hash (per your process)
-- Acquire process tree + full command line + any script content
-- Hunt for same indicators across enterprise
+### Pivot 1 — Same host: all PowerShell executions (last 24h)
+```spl
+(index=* (sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 OR sourcetype="WinEventLog:Security" EventCode=4688))
+| eval Image=coalesce(Image, NewProcessName, ProcessName, process_path)
+| eval CommandLine=coalesce(CommandLine, ProcessCommandLine, Process_Command_Line, command_line)
+| eval ParentImage=coalesce(ParentImage, Creator_Process_Name, ParentProcessName, parent_process)
+| where host="<PUT_HOST_HERE>" AND (like(lower(Image), "%\\powershell.exe") OR like(lower(Image), "%\\pwsh.exe"))
+| table _time host user ParentImage Image CommandLine
+| sort 0 _time
