@@ -48,3 +48,41 @@ High confidence if you see any of these:
 | where host="<PUT_HOST_HERE>" AND (like(lower(Image), "%\\powershell.exe") OR like(lower(Image), "%\\pwsh.exe"))
 | table _time host user ParentImage Image CommandLine
 | sort 0 _time
+```
+
+### Pivot 2 — Same user: activity across all hosts (last 24h)
+```spl
+(index=* (sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 OR sourcetype="WinEventLog:Security" EventCode=4688))
+| eval User=coalesce(User, user, AccountName, SubjectUserName)
+| where User="<PUT_USER_HERE>"
+| table _time host User Image CommandLine
+| sort 0 _time
+```
+
+### Pivot 3 — Network activity from the host shortly after execution
+```spl
+index=* sourcetype=*proxy* OR sourcetype=*dns* OR sourcetype=*firewall*
+| where host="<PUT_HOST_HERE>"
+| table _time host dest_ip dest_port url domain action
+| sort 0 _time
+```
+
+## Escalation thresholds
+| Signal combination | Disposition |
+|---|---|
+| Encoded command + download cradle (IEX/WebClient/iwr/irm) | **Escalate immediately** — high-confidence loader pattern |
+| Hidden window + execution policy bypass, no download indicator | **Escalate** — likely staging, confirm parent process |
+| Single flag only (e.g. `-NoProfile`), known admin parent/account | **Close as benign** — document and move on |
+| Any flag + parent is Office app or browser | **Escalate immediately** regardless of other context — classic macro/phishing execution chain |
+| Suspicious flags but from a known deployment tool parent (SCCM/Intune/PDQ) | **Verify against change record**, close if confirmed, escalate if not |
+
+## Response actions (if escalated)
+1. Isolate the host (EDR containment) if malicious intent is likely
+2. Capture the full process tree and command line (decode any `-EncodedCommand` payload)
+3. Collect PowerShell script block logs if enabled
+4. Hunt the same command-line pattern and any extracted IOCs across the environment
+5. Check for persistence (Run keys, scheduled tasks) and lateral movement from the host
+6. If confirmed malicious, feed the IOCs and pattern back into [`splunk-detections/suspicious-powershell`](https://github.com/nicky-quist/splunk-detections/tree/main/detections/suspicious-powershell) tuning
+
+## Closing the alert
+Document: final disposition (true positive / false positive / benign-confirmed), evidence reviewed, and any tuning change made as a result. A closed alert that doesn't reduce future noise or improve detection is a missed opportunity, not just a completed ticket.
