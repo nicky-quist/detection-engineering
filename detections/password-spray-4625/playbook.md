@@ -12,7 +12,7 @@ One source generating failed logons (4625) against many distinct usernames in a 
 
 ## Triage (5-minute decision)
 ### 1) Confirm the pattern
-Real spraying looks like: one `src_ip`, `distinct_users >= 6`, `failures >= 8`, within a 10-minute window (see [`splunk-detections/password-spray-4625`](https://github.com/nicky-quist/splunk-detections/tree/main/detections/password-spray-4625) for the correlation search and tuned thresholds).
+Real spraying looks like: one `src_ip`, `distinct_users >= 6`, `failures >= 8`, within a 10-minute window (see [`query.spl`](query.spl) for the correlation search and [`tuning.md`](tuning.md) for the thresholds).
 
 ### 2) Rule out common false positives first
 - Vulnerability scanner or pentest IP (check against known scanner list)

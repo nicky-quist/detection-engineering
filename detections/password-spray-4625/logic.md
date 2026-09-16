@@ -26,7 +26,7 @@ In production, tune based on baseline volumes and lockout policy.
 
 ## Severity guidance
 HIGH when:
-- distinct users is high (e.g., 10+)
+- distinct users is high (12+, matching `query.spl` and the playbook)
 - attempts hit multiple hosts
 - failures indicate "bad password" more than "user doesn't exist"
 - happens outside business hours

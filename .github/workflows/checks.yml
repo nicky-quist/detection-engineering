@@ -1,0 +1,29 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Detections, labs, playbooks and validation notes all link to each
+      # other. A moved or renamed file should fail here, not on a reader.
+      - name: Relative links resolve
+        run: python validation/check_links.py
+
+      # Confirms the HEC scenarios still expose the v1 defects and pass the
+      # positive controls. This checks the test data, not the SPL. Only a
+      # run against Splunk validates the queries (see validation/README.md).
+      - name: Validation scenarios are well-formed
+        run: python validation/hec_scenarios.py --self-check

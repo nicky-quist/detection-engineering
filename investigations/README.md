@@ -10,7 +10,7 @@ Every case follows the same structure, documented end-to-end rather than just sh
 2. **Protocol/flow analysis** — Wireshark/tshark breakdown of the relevant conversations
 3. **Timeline** — sequence of events with timestamps
 4. **IOCs** — IPs, domains, hashes, JA3/JA4, user-agents, anything reusable for detection
-5. **SIEM pivot** — how this traffic would appear in Splunk/Suricata logs, and what detection would have caught it (cross-referenced against [`splunk-detections`](https://github.com/nicky-quist/splunk-detections) where applicable)
+5. **SIEM pivot** — how this traffic would appear in Splunk/Suricata logs, and what detection would have caught it (cross-referenced against [`detections/`](../detections) where applicable)
 6. **Findings** — root cause, scope, and recommended response
 
 ## Structure

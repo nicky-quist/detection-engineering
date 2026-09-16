@@ -1,0 +1,61 @@
+``` password-spray-4625 v2 - PENDING VALIDATION ```
+``` Not yet run against live data. query.spl remains the validated detection. ```
+```
+Fixes a window-alignment evasion in query.spl.
+
+v1 groups events with `bucket _time span=10m`, which cuts time into fixed
+10-minute blocks aligned to the clock (10:00-10:10, 10:10-10:20, ...). A
+spray that crosses a block edge is split in two. For example, 5 users
+failing at 10:07-10:09 and 5 more at 10:11-10:13 is 10 users in 6 minutes,
+but each block sees only 5, so neither reaches distinct_users >= 6 and
+nothing fires. An attacker doesn't need to know where the edges are:
+pacing the spray at about 5 users per 10 minutes stays under the threshold
+in every block.
+
+v2 uses a sliding 10-minute window per source (streamstats time_window),
+so the thresholds are tested against the previous 10 minutes as of every
+event rather than against fixed clock blocks. It then returns one row per
+spraying source covering all of that source's failures in the search range,
+so the analyst sees the whole spray rather than one slice of it.
+
+Thresholds and severity bands are unchanged from v1.
+
+Operational note: streamstats time_window is limited by max_stream_window
+in limits.conf (default 10000 events per window). A source generating more
+failures than that in 10 minutes will already be obvious, but the limit is
+worth knowing.
+
+Reproduce with ../../validation/hec_scenarios.py (scenarios spray-control,
+spray-boundary).
+```
+index=* (sourcetype=WinEventLog:Security OR sourcetype=XmlWinEventLog:Security OR sourcetype=*wineventlog*security*)
+EventCode=4625
+| eval src_ip=coalesce(src_ip, Source_Network_Address, SourceNetworkAddress, IpAddress, ip, ClientIP)
+| eval user=lower(coalesce(user, TargetUserName, Account_Name, Target_Account, TargetUser, UserName))
+| eval host=coalesce(dest, ComputerName, host)
+| where isnotnull(src_ip) AND src_ip!="-"
+``` time_window requires time-ordered events ```
+| sort 0 _time
+| streamstats time_window=10m
+    count as failures_10m
+    dc(user) as distinct_users_10m
+    dc(host) as distinct_hosts_10m
+  by src_ip
+| eval spray_hit=if(failures_10m>=8 AND distinct_users_10m>=6, 1, 0)
+``` keep every event from a source that crossed the threshold at any point ```
+| eventstats max(spray_hit) as src_is_spraying by src_ip
+| where src_is_spraying=1
+| stats
+    min(_time) as first_seen
+    max(_time) as last_seen
+    count as total_failures
+    max(distinct_users_10m) as peak_distinct_users_10m
+    max(distinct_hosts_10m) as peak_distinct_hosts_10m
+    values(user) as users_sample
+    values(host) as hosts_sample
+  by src_ip
+| eval detection="password-spray-4625"
+| eval severity=case(peak_distinct_users_10m>=12 OR peak_distinct_hosts_10m>=3, "high", peak_distinct_users_10m>=8, "medium", true(), "low")
+| sort 0 - last_seen
+| convert ctime(first_seen) ctime(last_seen)
+| table first_seen last_seen src_ip total_failures peak_distinct_users_10m peak_distinct_hosts_10m severity users_sample hosts_sample detection

@@ -82,7 +82,7 @@ index=* sourcetype=*proxy* OR sourcetype=*dns* OR sourcetype=*firewall*
 3. Collect PowerShell script block logs if enabled
 4. Hunt the same command-line pattern and any extracted IOCs across the environment
 5. Check for persistence (Run keys, scheduled tasks) and lateral movement from the host
-6. If confirmed malicious, feed the IOCs and pattern back into [`splunk-detections/suspicious-powershell`](https://github.com/nicky-quist/splunk-detections/tree/main/detections/suspicious-powershell) tuning
+6. If confirmed malicious, feed the IOCs and pattern back into this detection's [`tuning.md`](tuning.md)
 
 ## Closing the alert
 Document: final disposition (true positive / false positive / benign-confirmed), evidence reviewed, and any tuning change made as a result. A closed alert that doesn't reduce future noise or improve detection is a missed opportunity, not just a completed ticket.

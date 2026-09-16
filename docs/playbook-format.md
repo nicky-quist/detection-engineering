@@ -1,14 +1,8 @@
-# SOC Triage Playbooks
+# Playbook format
 
 Alert triage checklists: a 5-minute decision process, copy/paste SIEM pivots, escalation thresholds, and response actions — for the alert types I've built detections for.
 
-Each playbook is paired with the detection that generates the alert, so the logic behind the pivot and the logic behind the escalation threshold stay consistent with each other.
-
-## Playbooks
-| Playbook | Paired detection |
-|---|---|
-| [`suspicious-powershell.md`](playbooks/suspicious-powershell.md) | [`splunk-detections/suspicious-powershell`](https://github.com/nicky-quist/splunk-detections/tree/main/detections/suspicious-powershell) |
-| [`password-spray.md`](playbooks/password-spray.md) | [`splunk-detections/password-spray-4625`](https://github.com/nicky-quist/splunk-detections/tree/main/detections/password-spray-4625) |
+Each playbook lives in the same folder as the detection that generates the alert (`detections/<name>/playbook.md`), so the logic behind the pivot and the logic behind the escalation threshold stay consistent with each other.
 
 ## Format
 Every playbook follows the same shape:
@@ -19,8 +13,3 @@ Every playbook follows the same shape:
 5. **Escalation thresholds** — a table mapping signal combinations to disposition
 6. **Response actions** — concrete containment/remediation steps if escalated
 7. **Closing the alert** — what to document so the next analyst (or the detection itself) benefits
-
-## Roadmap
-- Local admin creation + first-logon correlation (pairs with `splunk-detections/local-admin-creation`)
-- Service creation persistence
-- Suspicious outbound DNS

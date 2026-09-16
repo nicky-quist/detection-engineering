@@ -54,7 +54,7 @@ index=* sourcetype=suricata event_type=alert alert.signature="*NMAP*"
 | table src_ip dest_ip alert_count distinct_ports severity ports detection
 | sort - distinct_ports
 ```
-This mirrors the correlation approach used in [`splunk-detections`](https://github.com/nicky-quist/splunk-detections) — threshold on a distinctive fan-out pattern (many ports/hosts from one source) rather than alerting on individual events.
+This mirrors the correlation approach used in [`password-spray-4625`](../../detections/password-spray-4625) — threshold on a distinctive fan-out pattern (many ports/hosts from one source) rather than alerting on individual events.
 
 ## Investigation pivots
 - **Source reputation** — is this IP internal (routine vuln-scan schedule?) or external?
@@ -68,4 +68,4 @@ This mirrors the correlation approach used in [`splunk-detections`](https://gith
 - Misconfigured load balancers or health checks hitting many ports on one host
 
 ## Status
-Detection logic (Suricata rule + Splunk correlation) is written and lab-testable end-to-end; not yet validated against a live capture in this repo. Next step: run the lab, capture the PCAP and Suricata `eve.log` output, and add them as evidence alongside a validation writeup (same format as [`splunk-detections`](https://github.com/nicky-quist/splunk-detections) evidence folders).
+Detection logic (Suricata rule + Splunk correlation) is written and lab-testable end-to-end; not yet validated against a live capture in this repo. Next step: run the lab, capture the PCAP and Suricata `eve.log` output, and add them as evidence alongside a validation writeup (same format as the [`detections/`](../../detections) evidence folders).

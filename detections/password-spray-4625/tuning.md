@@ -21,6 +21,9 @@
    - Require attempts across >= 2 hosts
    - Require Status/SubStatus indicates "bad password" more than "user doesn't exist"
 
+## Known limitation: fixed time blocks
+`query.spl` uses `bucket _time span=10m`, which splits time into fixed clock blocks. A spray that crosses a block edge is divided, and neither half may reach the threshold, so a spray paced at about 5 users per 10 minutes is never detected. [`query_v2.spl`](query_v2.spl) replaces the fixed blocks with a sliding window and is **pending validation**; see [`validation/`](../../validation).
+
 ## Tuning knobs
 - Time window: 5m / 10m / 15m
 - Threshold attempts: 8 / 15 / 25

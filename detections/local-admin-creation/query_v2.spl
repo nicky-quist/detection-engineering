@@ -1,0 +1,58 @@
+``` local-admin-creation v2 - PENDING VALIDATION ```
+``` Not yet run against live data. query.spl remains the validated detection. ```
+```
+Fixes two defects in query.spl, both found in review rather than in testing:
+
+1. Severity decays as the attacker keeps using the account.
+   v1 sets span_min = max(_time) - min(_time) over every matching event
+   for the SID, so it measures to the LAST 4624 in the search window. A
+   create -> elevate -> logon chain completed in 4 minutes is scored high,
+   but one more logon 90 minutes later stretches the span to 90 and the
+   same chain drops to low. v2 measures creation to the FIRST logon after
+   elevation, so later use can no longer lower the score.
+
+2. Order is never enforced.
+   v1 checks the three step names with values() and mvfind(). values()
+   returns a sorted, de-duplicated set, so it proves each step happened
+   but not in what order, while the README promises create -> elevate ->
+   logon in that order. v2 requires the admin add at or after creation, and
+   a logon at or after the admin add.
+
+Also: 4732's TargetUserName is the group ("Administrators"), not the
+account, so v1's usernames column included the group name. v2 excludes it.
+
+Reproduce both defects with ../../validation/hec_scenarios.py (scenarios
+admin-control, admin-decay, admin-order).
+```
+index=* (sourcetype=WinEventLog:Security OR sourcetype=XmlWinEventLog:Security OR sourcetype=*wineventlog*security*)
+(EventCode=4720 OR EventCode=4732 OR EventCode=4624)
+| eval sid=coalesce(TargetUserSid, MemberSid, TargetSid)
+| eval event_type=case(
+    EventCode=4720, "created",
+    EventCode=4732 AND TargetSid="S-1-5-32-544", "added_to_admins",
+    EventCode=4624, "logon"
+  )
+| where isnotnull(event_type)
+| eval account=if(EventCode=4732, null(), TargetUserName)
+``` step times are per SID, computed once and carried onto every event ```
+| eventstats
+    min(eval(if(event_type="created", _time, null()))) as created_time
+    min(eval(if(event_type="added_to_admins", _time, null()))) as admin_time
+  by sid
+| where isnotnull(created_time) AND isnotnull(admin_time) AND admin_time>=created_time
+``` only logons at or after elevation complete the chain ```
+| eval logon_after_admin=if(event_type="logon" AND _time>=admin_time, _time, null())
+| stats
+    min(created_time) as created_time
+    min(admin_time) as admin_time
+    min(logon_after_admin) as first_logon_time
+    count(logon_after_admin) as logons_after_admin
+    values(account) as usernames
+  by sid
+| where isnotnull(first_logon_time)
+| eval span_min=round((first_logon_time-created_time)/60,1)
+| eval detection="local-admin-creation-first-logon"
+| eval severity=case(span_min<=15, "high", span_min<=30, "medium", true(), "low")
+| sort 0 - created_time
+| convert ctime(created_time) ctime(admin_time) ctime(first_logon_time)
+| table created_time admin_time first_logon_time sid usernames span_min logons_after_admin severity detection

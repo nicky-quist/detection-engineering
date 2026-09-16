@@ -22,7 +22,9 @@ Routine provisioning also creates local admins, but rarely all three steps in a 
 - `logic.md` — field quirks discovered during validation (SID vs. username correlation)
 - `mitre.md` — MITRE mapping + rationale
 - `tuning.md` — validation results and severity thresholds
-- `query.spl` — SPL correlation search
+- `query.spl` — SPL correlation search (validated)
+- `query_v2.spl` — fixes severity decay and step ordering; **pending validation**
+- `playbook.md` — triage: decision process, pivots, escalation thresholds, response
 - `evidence-local-admin-creation-splunk-results.jpeg` — validated results from a live test (create → elevate → logon)
 
 ## Recommended investigation pivots

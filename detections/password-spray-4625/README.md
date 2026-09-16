@@ -32,5 +32,7 @@ You do NOT need to lock accounts; keep counts small and use lab accounts.
 - logic.md — thresholds + correlation approach
 - mitre.md — MITRE mapping + rationale
 - tuning.md — reduce noise (service accounts, scanners, misconfigs)
-- query.spl — SPL correlation search
+- query.spl — SPL correlation search (validated)
+- query_v2.spl — sliding-window fix for block-edge evasion; **pending validation**
+- playbook.md — triage: decision process, pivots, escalation thresholds, response
 - evidence/ — HEC simulation script, raw ingested events, correlation search output, and validation notes
